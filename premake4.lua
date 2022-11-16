@@ -15,6 +15,3 @@ for i, name in ipairs(pgenerator_apps) do
   	files ( pgenerator_files )
   	files { "app/" .. name .. ".cpp" }
 end
-
-
-
