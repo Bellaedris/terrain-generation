@@ -58,8 +58,7 @@ public:
        // decrire un repere / grille 
         m_repere= make_grid(10);
 
-        Terrain terrain(vec2(0, 0), vec2(10, 10), 128, 128);
-        m_objet = terrain.GenerateMesh();
+        Terrain terrain(vec2(0, 0), vec2(10, 10), 128, 128, 1);
 
         terrain.ExportImg("../out/heightmap.png", -1, 1);
 
@@ -67,6 +66,12 @@ public:
         slope.ExportImg("../out/slopemap.png");
 
         terrain.GetLaplacian().ExportImg("../out/laplacianmap.png");
+
+        terrain.GetDrainArea().sqrt().ExportImg("../out/drainmap.png");
+
+        terrain.TectonicErosion();
+        terrain.ExportImg("../out/erodedmap.png", -1, 1);
+        m_objet = terrain.GenerateMesh();
         
         // etat openGL par defaut
         glClearColor(0.2f, 0.2f, 0.2f, 1.f);        // couleur par defaut de la fenetre
