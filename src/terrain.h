@@ -5,6 +5,22 @@
 
 #include <vector>
 
+struct grid_neighbor {
+    int i, j; // coord
+    double s; // slope
+    double h; // height
+
+    grid_neighbor(): i(-1), j(-1), s(-1), h(-1) {}
+    grid_neighbor(int i, int j, double s, double h) : i(i), j(j), s(s), h(h) {}
+};
+
+struct neighborhood {
+    grid_neighbor neighbors[8]; // list of neighbors
+    int n; // number of neighbors that are really usable
+
+    neighborhood() : n(0) {}
+};
+
 struct areaCell {
     int x;
     int y;
@@ -41,6 +57,7 @@ public:
     ScalarField& pow(double f);
     vec2 Gradient(int, int) const;
     int Index(int, int) const;  // index dans le tableau
+    int Index(int) const; // index dans le tableau to 2 coord
     double Height(int, int) const; //hauteur en un point
 
     bool Intersect(const Ray &r, float &t, float k/*constante de lipschitz*/) const;
@@ -51,7 +68,25 @@ public:
 class Terrain : public ScalarField {
 protected:
     adjacency_list_t CreateAdjacencyList();
-    double Cost(int source, int dest);
+    double Cost(int si, int sj, int di, int dj);
+
+    neighborhood Get8Neighbors(int i, int j) const;
+    neighborhood Get4Neighbors(int i, int j) const;
+
+    int neigh4Indices[4] = {1, 3, 4, 6};
+
+    const int neigh8x[8] = {
+        -1, 0, 1,
+        -1,    1,
+        -1, 0, 1
+    };
+
+    const int neigh8y[8] = {
+        -1, -1, -1,
+         0,      0,
+         1,  1,  1
+    };
+
 public:
     Terrain(vec2 a, vec2 b, int nx, int ny, int seed = 1337);
     Terrain(vec2 a, vec2 b, int nx, int ny, std::vector<double> hm) : ScalarField(a, b, nx, ny, hm) {}

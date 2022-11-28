@@ -2,6 +2,7 @@
 #include "image.h"
 #include "image_io.h"
 
+#pragma region scalar field
 ScalarField::ScalarField(vec2 a, vec2 b, int nx, int ny) : a(a), b(b), nx(nx), ny(ny)
 {
     stepX = (Point(b) - Point(a)).x / (nx - 1);
@@ -137,6 +138,9 @@ void ScalarField::ExportImg(char *filename, float min, float max)
     write_image(out, filename);
 }
 
+#pragma endregion
+
+#pragma region construct / basics
 Terrain::Terrain(vec2 a, vec2 b, int nx, int ny, int seed) : ScalarField(a, b, nx, ny)
 {
     hm = std::vector<double>(nx * ny);
@@ -180,13 +184,56 @@ Vector Terrain::Normal(int i, int j) const
 
 double Terrain::Laplacian(int i, int j) const
 {
-    double xn = Height(i + 1, j);
-    double xp = Height(i - 1, j);
-    double yn = Height(i, j + 1);
-    double yp = Height(i, j - 1);
+    neighborhood n = Get4Neighbors(i, j);
+    
+    double sum = 0;
+    for(int i = 0; i < n.n; i++) {
+        sum += (n.neighbors[i].h - Height(i, j));
+    }
 
-    return (xn + xp + yn + yp - 4 * Height(i, j)) / (stepX * stepY);
+    return sum / (stepX * stepY);
 }
+
+neighborhood Terrain::Get4Neighbors(int i, int j) const
+{
+    neighborhood n;
+
+    for (size_t k = 0; k < 4; k++)
+    {
+        int neighI = i + neigh8x[neigh4Indices[k]];
+        int neighJ = j + neigh8y[neigh4Indices[k]];
+        int index = neighI * nx + neighJ;
+        
+        if (index > 0 && index < (nx * ny - 1))
+        {
+            n.neighbors[k] = grid_neighbor(neighI, neighJ, Slope(neighI, neighJ), Height(neighI, neighJ));
+            n.n++;
+        }
+    }
+
+    return n;
+}
+
+neighborhood Terrain::Get8Neighbors(int i, int j) const
+{
+    neighborhood n;
+    for (int k = 0; k < 8; k++)
+    {
+        int neighI = i + neigh8x[k];
+        int neighJ = j + neigh8y[k];
+        int index = neighI * nx + neighJ;
+        
+        if (index > 0 && index < (nx * ny - 1))
+        {
+            n.neighbors[k] = grid_neighbor(neighI, neighJ, Slope(neighI, neighJ), Height(neighI, neighJ));
+            n.n++;
+        }
+    }
+
+    return n;
+}
+
+#pragma endregion
 
 /**
  * computes the normal of a face
@@ -347,16 +394,20 @@ void Terrain::TectonicErosion()
         totalDrain *= totalSlope;
 
         ScalarField totalLaplacian = GetLaplacian();
-        totalLaplacian *= 0.0001;
+        totalLaplacian *= 0.001;
         totalLaplacian += totalDrain;
 
         *this += totalLaplacian;
-        //*this += 0.01;
+        *this += 0.01;
     }
 }
 
-double Terrain::Cost(int source, int dest)
+double Terrain::Cost(int si, int sj, int di, int dj)
 {
+    double d = distance(Position(si, sj), Position(di, dj));
+    double slope = std::abs(Slope(si, sj) - Slope(di, dj));
+
+    return d /* (1 + slope)*/;
 }
 
 adjacency_list_t Terrain::CreateAdjacencyList()
@@ -369,14 +420,15 @@ adjacency_list_t Terrain::CreateAdjacencyList()
     {
         for (int x = 0; x < nx; x++)
         {
+            int i = Index(x, y);
             // add all the n neighbors of the point using a cost function
-            for (int i = -n; i <= n; i++)
+            for (int offsetx = -n; offsetx <= n; offsetx++)
             {
-                for (int j = -n; j <= n; j++)
+                for (int offsety = -n; offsety <= n; offsety++)
                 {
-                    if (i > hn && i < nx - hn && j > hn && j < hn && !(i == 0 && j == 0))
+                    if (x > hn && x < nx - hn && y > hn && y < hn && !(x == 0 && y == 0))
                     {
-                        adj_list[i].push_back(neighbor(Index((x + i), y + j), Cost(Index(x, y), Index(x + i, y + j))));
+                        adj_list[i].push_back(neighbor(Index((x + offsetx), y + offsety), Cost(x, y, x + offsetx, y + offsety)));
                     }
                 }
             }
