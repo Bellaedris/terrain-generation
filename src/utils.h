@@ -1,5 +1,6 @@
 #include "vec.h"
 #include "math.h"
+#include "color.h"
 
 #include <iostream>
 #include <vector>
@@ -13,11 +14,17 @@
 #include <algorithm>
 #include <iterator>
 
-float vec2length2(const vec2 &v);
+double vec2length2(const vec2 &v);
 
-float vec2length(const vec2 &v);
+double vec2length(const vec2 &v);
 
-float Lerp(float a, float b, float f);
+double Lerp(double a, double b, double f);
+
+Color Lerp(Color a, Color b, double f);
+
+double Normalize01(double min, double max, double t);
+
+double Clamp(double min, double max, double val);
 
 typedef int vertex_t;
 typedef double weight_t;
