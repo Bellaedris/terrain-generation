@@ -2,6 +2,7 @@
 #include "utils.h"
 #include "mesh.h"
 #include "FastNoiseLite.h"
+#include "image.h"
 
 #include <vector>
 
@@ -15,7 +16,7 @@ struct grid_neighbor {
 };
 
 struct neighborhood {
-    grid_neighbor neighbors[8]; // list of neighbors
+    std::vector<grid_neighbor> neighbors; // list of neighbors
     int n; // number of neighbors that are really usable
 
     neighborhood() : n(0) {}
@@ -31,6 +32,8 @@ struct areaCell {
 };
 
 inline bool compareCells(areaCell lh, areaCell rh) {return lh.height > rh.height;}
+inline bool sortGreaterThan(double i, double j) {return i > j;};
+inline bool sortLowerThan(double i, double j) {return i < j;};
 
 class Ray;
 
@@ -57,7 +60,7 @@ public:
     ScalarField& pow(double f);
     vec2 Gradient(int, int) const;
     int Index(int, int) const;  // index dans le tableau
-    int Index(int) const; // index dans le tableau to 2 coord
+    std::pair<int, int> ReverseIndex(int) const; // index dans le tableau to 2 coord
     double Height(int, int) const; //hauteur en un point
 
     bool Intersect(const Ray &r, float &t, float k/*constante de lipschitz*/) const;
@@ -68,12 +71,15 @@ public:
 class Terrain : public ScalarField {
 protected:
     adjacency_list_t CreateAdjacencyList();
-    double Cost(int si, int sj, int di, int dj);
+    adjacency_list_t CreateRiverAdjacencyList();
+    double Cost(int si, int sj, int di, int dj, const ScalarField &wetness);
+    double RiverCost(int si, int sj, int di, int dj, const ScalarField &wetness);
 
     neighborhood Get8Neighbors(int i, int j) const;
     neighborhood Get4Neighbors(int i, int j) const;
+    neighborhood GetNNeighbors(int n, int i, int j) const;
 
-    int neigh4Indices[4] = {1, 3, 4, 6};
+    int neigh4Indices[4] = {1, 6, 4, 3};
 
     const int neigh8x[8] = {
         -1, 0, 1,
@@ -87,27 +93,35 @@ protected:
          1,  1,  1
     };
 
+    Image texture;
+
 public:
-    Terrain(vec2 a, vec2 b, int nx, int ny, int seed = 1337);
+    Terrain(vec2 a, vec2 b, int nx, int ny, int seed = 1337) ;
     Terrain(vec2 a, vec2 b, int nx, int ny, std::vector<double> hm) : ScalarField(a, b, nx, ny, hm) {}
+    Terrain(vec2 a, vec2 b, int nx, int ny, double heightMax);
+
+    Image& GetTexture() {return texture;};
 
     Point Position(int, int) const; //vecteur x y z avec hauteur pour des coord du tableau
     Point Position(double, double) const; // pareil mais avec des coord entieres
     Vector Normal(int, int) const; // calcule la normal au sommet
     void FaceNormal(Vector &normal, const Point &a, const Point &b, const Point &c);
-    float Slope(int, int) const;
+    double Slope(int, int) const;
     double Laplacian(int, int) const;
 
     // Terrain edition
     void TectonicErosion();
     void CreatePath(int begin, int end);
+    void CreateRiver();
 
     float MaxSlope(); // Lipschitzian constant
 
     bool Inside(Vector) const; // point in the terrain check
 
     Mesh GenerateMesh();
+    void GenerateTexture();
     ScalarField GetSlope();
     ScalarField GetLaplacian();
     ScalarField GetDrainArea();
+    ScalarField GetWetness();
 };

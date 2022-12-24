@@ -58,7 +58,7 @@ public:
        // decrire un repere / grille 
         m_repere= make_grid(10);
 
-        Terrain terrain(vec2(0, 0), vec2(10, 10), 128, 128, 1);
+        Terrain terrain(vec2(0, 0), vec2(10, 10), 256, 256, 1);
 
         terrain.ExportImg("../out/heightmap.png", -1, 1);
 
@@ -67,11 +67,25 @@ public:
 
         terrain.GetLaplacian().ExportImg("../out/laplacianmap.png");
 
-        terrain.GetDrainArea().sqrt().ExportImg("../out/drainmap.png");
+        terrain.GetDrainArea().sqrt().sqrt().ExportImg("../out/drainmap.png");
 
-        terrain.TectonicErosion();
-        terrain.ExportImg("../out/erodedmap.png", -1, 1);
+        terrain.GetWetness().ExportImg("../out/wetnessmap.png");
+
+        //terrain.TectonicErosion();
+        //terrain.ExportImg("../out/erodedmap.png", -1, 1);
+
+        terrain.GenerateTexture();
+        terrain.CreatePath(0, 15000);
+        //terrain.CreateRiver();
+
         m_objet = terrain.GenerateMesh();
+        Image i_texture = terrain.GetTexture();
+        write_image(i_texture, "../out/texture.png");
+        texture = make_texture(0, i_texture); //make_texture(0, i_texture);
+
+        Point pmin, pmax;
+        m_objet.bounds(pmin, pmax);
+        m_camera.lookat(pmin, pmax);
         
         // etat openGL par defaut
         glClearColor(0.2f, 0.2f, 0.2f, 1.f);        // couleur par defaut de la fenetre
@@ -95,8 +109,7 @@ public:
     {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         
-        // dessine un cube, lui aussi place au centre du monde
-        draw(m_objet, Translation(-5, -5, 0), camera());
+        draw(m_objet, m_camera, texture);
 
         //draw(m_repere, Identity(), camera());
 
@@ -106,6 +119,8 @@ public:
 protected:
     Mesh m_objet;
     Mesh m_repere;
+
+    GLuint texture;
 };
 
 
