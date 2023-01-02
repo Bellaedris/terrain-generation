@@ -107,8 +107,20 @@ double ScalarField::Height(int i, int j) const
 
 vec2 ScalarField::Gradient(int i, int j) const
 {
-    double dhx = (Height(i + 1, j) - Height(i - 1, j)) / stepX;
-    double dhy = (Height(i, j + 1) - Height(i, j - 1)) / stepY;
+    double dhx, dhy;
+    if (i == 0)
+        dhx = (Height(i + 1, j) - Height(i, j)) / stepX;
+    else if (i == nx - 1)
+        dhx = (Height(i, j) - Height(i - 1, j)) / stepX;
+    else 
+        dhx = (Height(i + 1, j) - Height(i - 1, j)) / stepX;
+
+    if (j == 0)
+        dhy = (Height(i, j + 1) - Height(i, j)) / stepY;
+    else if (j == ny - 1)
+        dhy = (Height(i, j) - Height(i, j - 1)) / stepY;
+    else 
+        dhy = (Height(i, j + 1) - Height(i, j - 1)) / stepY;
 
     return vec2(dhx, dhy);
 }
@@ -120,8 +132,8 @@ void ScalarField::ExportImg(char *filename, float min, float max)
     if (min == max)
     {
         // find max and min val
-        max = Height(0, 0);
-        min = Height(0, 0);
+        max = 0;
+        min = MAXFLOAT;
         for (int x = 0; x < nx; x++)
         {
             for (int y = 0; y < ny; y++)
@@ -279,7 +291,6 @@ neighborhood Terrain::GetNNeighbors(int n, int i, int j) const
                 ne.n++;
             }
         }
-
     return ne;
 }
 
@@ -374,16 +385,16 @@ void Terrain::GenerateTexture()
     {
         for (int y = 0; y < ny; y++)
         {
-            if (a.Height(x, y) > 0.003 * max)
+            if (a.Height(x, y) > minWater * max)
             {
-                double normalized = Normalize01(0.003 * max, 0.05 * max, a.Height(x, y));
+                double normalized = Normalize01(minWater * max, 0.05 * max, a.Height(x, y));
                 texture(x, y) = Lerp(Color(0, .39, .61), Color(0.26, 0.69, 0.8), normalized);
                 continue;
             }
             if (Height(x, y) < -0.5)
-                texture(x, y) = Color(188 / 255.0, 129 / 255.0, 95 / 255.0);
+                texture(x, y) = Color(0.73, 0.5, 0.37);
             else if (Height(x, y) < 0)
-                texture(x, y) = Color(34 / 255.0, 139 / 255.0, 34 / 255.0);
+                texture(x, y) = Color(0.13, 0.54, 0.13);
             else if (Height(x, y) < 0.5)
                 texture(x, y) = Color(0.5, 0.5, 0.5);
             else
@@ -397,9 +408,9 @@ ScalarField Terrain::GetSlope()
     std::vector<double> slopes;
     slopes.resize(hm.size());
 
-    for (int x = 1; x < nx - 1; x++)
+    for (int x = 0; x < nx; x++)
     {
-        for (int y = 1; y < ny - 1; y++)
+        for (int y = 0; y < ny; y++)
         {
             slopes[Index(x, y)] = Slope(x, y);
         }
@@ -511,150 +522,5 @@ void Terrain::TectonicErosion()
 
         *this += totalLaplacian;
         *this += 0.001;
-    }
-}
-
-double Terrain::Cost(int si, int sj, int di, int dj, const ScalarField &wetness)
-{
-    double d = distance(Position(si, sj), Position(di, dj));
-    double slope = std::abs(Slope(si, sj) - Slope(di, dj));
-
-    return d * (1 + 10 * slope + 0.5 * wetness.Height(di, dj));
-}
-
-double Terrain::RiverCost(int si, int sj, int di, int dj, const ScalarField &area)
-{
-    double d = std::abs(area.Height(si, sj) - area.Height(di, dj));
-
-    return d;
-}
-
-adjacency_list_t Terrain::CreateAdjacencyList()
-{
-    // int n = 2; // degree of neighbors
-    // int hn = std::floor(n / 2.0);
-    adjacency_list_t adj_list(nx * ny);
-    ScalarField wetness = GetWetness();
-
-    int newX, newY;
-
-    for (int y = 0; y < ny; y++)
-    {
-        for (int x = 0; x < nx; x++)
-        {
-            int i = Index(x, y);
-            neighborhood n = GetNNeighbors(2, x, y);
-            for (int k = 0; k < n.n; k++)
-            {
-                newX = n.neighbors[k].i;
-                newY = n.neighbors[k].j;
-                adj_list[i].push_back(neighbor(Index(newX, newY), Cost(x, y, newX, newY, wetness)));
-            }
-        }
-    }
-
-    return adj_list;
-}
-
-adjacency_list_t Terrain::CreateRiverAdjacencyList()
-{
-    // int n = 2; // degree of neighbors
-    // int hn = std::floor(n / 2.0);
-    adjacency_list_t adj_list(nx * ny);
-    ScalarField drain = GetDrainArea();
-
-    int newX, newY;
-
-    for (int y = 0; y < ny; y++)
-    {
-        for (int x = 0; x < nx; x++)
-        {
-            int i = Index(x, y);
-            neighborhood n = Get8Neighbors(x, y);
-            for (int k = 0; k < n.n; k++)
-            {
-                newX = n.neighbors[k].i;
-                newY = n.neighbors[k].j;
-                adj_list[i].push_back(neighbor(Index(newX, newY), RiverCost(x, y, newX, newY, drain)));
-            }
-        }
-    }
-
-    return adj_list;
-}
-
-void Terrain::CreatePath(int begin, int end)
-{
-    std::vector<weight_t> minDistance;
-    std::vector<vertex_t> previous;
-    DijkstraComputePaths(begin, CreateAdjacencyList(), minDistance, previous);
-
-    std::list<vertex_t> path = DijkstraGetShortestPathTo(end, previous);
-
-    for (auto it = path.begin(); it != path.end(); it++)
-    {
-        std::pair<int, int> indices = ReverseIndex(*it);
-        texture(indices.first, indices.second) = Color(.52, .41, .44);
-    }
-}
-
-void Terrain::CreateRiver()
-{
-    ScalarField a = GetDrainArea();
-    int begin, end;
-
-    // std::vector<double> ahm(nx * ny);
-    // for (int x = 1; x < nx - 1; x++)
-    // {
-    //     for (int y = 1; y < ny - 1; y++)
-    //     {
-    //         ahm[x * nx + y] = a.Height(x, y);
-    //     }
-    // }
-
-    // std::sort(ahm.begin(), ahm.end(), sortGreaterThan);
-
-    // srand(time(NULL));
-    // int randIndex = rand() % 10;
-    // begin = ahm[randIndex];
-
-    // std::sort(ahm.begin(), ahm.end(), sortLowerThan);
-
-    // randIndex = rand() % 10;
-    // end = ahm[randIndex];
-
-    // std::cout << begin << " " << end << std::endl;
-
-    double max = 0;
-    double min = MAXFLOAT;
-    for (int x = 1; x < nx - 1; x++)
-    {
-        for (int y = 1; y < ny - 1; y++)
-        {
-            double h = a.Height(x, y);
-            if (max < h)
-            {
-                max = h;
-                end = Index(x, y);
-            }
-            if (min > h)
-            {
-                min = h;
-                begin = Index(x, y);
-            }
-        }
-    }
-
-    std::vector<weight_t> minDistance;
-    std::vector<vertex_t> previous;
-    DijkstraComputePaths(begin, CreateRiverAdjacencyList(), minDistance, previous);
-
-    std::list<vertex_t> path = DijkstraGetShortestPathTo(end, previous);
-
-    for (auto it = path.begin(); it != path.end(); it++)
-    {
-        std::cout << *it << std::endl;
-        std::pair<int, int> indices = ReverseIndex(*it);
-        texture(indices.first, indices.second) = Red(); // Color(0, .39, .61);
     }
 }

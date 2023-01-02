@@ -2,6 +2,8 @@
 
 #include "wavefront.h"
 #include "texture.h"
+#include "path.cpp"
+#include "cities.cpp"
 
 #include "orbiter.h"
 #include "draw.h"        
@@ -75,7 +77,7 @@ public:
         //terrain.ExportImg("../out/erodedmap.png", -1, 1);
 
         terrain.GenerateTexture();
-        terrain.CreatePath(0, 15000);
+        terrain.CreateCitiesAndRoads(5);
         //terrain.CreateRiver();
 
         m_objet = terrain.GenerateMesh();
@@ -86,6 +88,9 @@ public:
         Point pmin, pmax;
         m_objet.bounds(pmin, pmax);
         m_camera.lookat(pmin, pmax);
+        m_camera.rotation(180, 0);
+
+        std::cout << "init ok, rendering..." << std::endl;
         
         // etat openGL par defaut
         glClearColor(0.2f, 0.2f, 0.2f, 1.f);        // couleur par defaut de la fenetre
@@ -110,8 +115,6 @@ public:
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         
         draw(m_objet, m_camera, texture);
-
-        //draw(m_repere, Identity(), camera());
 
         return 1;
     }

@@ -6,6 +6,7 @@
 
 #include <vector>
 
+#pragma once
 struct grid_neighbor {
     int i, j; // coord
     double s; // slope
@@ -15,6 +16,7 @@ struct grid_neighbor {
     grid_neighbor(int i, int j, double s, double h) : i(i), j(j), s(s), h(h) {}
 };
 
+#pragma once
 struct neighborhood {
     std::vector<grid_neighbor> neighbors; // list of neighbors
     int n; // number of neighbors that are really usable
@@ -22,6 +24,7 @@ struct neighborhood {
     neighborhood() : n(0) {}
 };
 
+#pragma once
 struct areaCell {
     int x;
     int y;
@@ -31,12 +34,24 @@ struct areaCell {
     areaCell(int x, int y, double height) : x(x), y(y), height(height) {}
 };
 
+struct cityScore {
+    int i;
+    int j;
+    weight_t w;
+
+    cityScore() : i(0), j(0), w(0.) {}
+
+    inline void UpdateValues(int i, int j, weight_t w) {this->i = i; this->j = j; this->w = w;}
+};
+
 inline bool compareCells(areaCell lh, areaCell rh) {return lh.height > rh.height;}
 inline bool sortGreaterThan(double i, double j) {return i > j;};
 inline bool sortLowerThan(double i, double j) {return i < j;};
 
+#pragma once
 class Ray;
 
+#pragma once
 class ScalarField {
 protected:
     vec2 a, b; //box2, terrain bounding box
@@ -68,9 +83,10 @@ public:
     void ExportImg(char* filename, float min = 0, float max = 0);
 };
 
+#pragma once
 class Terrain : public ScalarField {
 protected:
-    adjacency_list_t CreateAdjacencyList();
+    adjacency_list_t CreateAdjacencyList(int degree);
     adjacency_list_t CreateRiverAdjacencyList();
     double Cost(int si, int sj, int di, int dj, const ScalarField &wetness);
     double RiverCost(int si, int sj, int di, int dj, const ScalarField &wetness);
@@ -94,6 +110,7 @@ protected:
     };
 
     Image texture;
+    const double minWater = 0.003;
 
 public:
     Terrain(vec2 a, vec2 b, int nx, int ny, int seed = 1337) ;
@@ -111,10 +128,14 @@ public:
 
     // Terrain edition
     void TectonicErosion();
-    void CreatePath(int begin, int end);
+    void CreateCitiesAndRoads(int numberOfCities);
+    void CreatePath(int begin, int end, int degree);
     void CreateRiver();
 
+    // analytics
     float MaxSlope(); // Lipschitzian constant
+    std::vector<cityScore> FindInterestPoints(int num);
+    int GetPathLength(int begin, int end, int degree);
 
     bool Inside(Vector) const; // point in the terrain check
 
