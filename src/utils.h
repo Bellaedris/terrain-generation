@@ -26,6 +26,8 @@ double Normalize01(double min, double max, double t);
 
 double Clamp(double min, double max, double val);
 
+inline double Deg2rad(double degree) {return degree * M_PI / 180;};
+
 typedef int vertex_t;
 typedef double weight_t;
 
