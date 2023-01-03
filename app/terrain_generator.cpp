@@ -60,7 +60,7 @@ public:
        // decrire un repere / grille 
         m_repere= make_grid(10);
 
-        Terrain terrain(vec2(0, 0), vec2(10, 10), 256, 256, 1);
+        Terrain terrain(vec2(0, 0), vec2(10, 10), 256, 256, 5, 1);
 
         terrain.ExportImg("../out/heightmap.png", -1, 1);
 
@@ -77,7 +77,8 @@ public:
         //terrain.ExportImg("../out/erodedmap.png", -1, 1);
 
         terrain.GenerateTexture();
-        terrain.CreateCitiesAndRoads(5);
+        terrain.CreateCitiesAndRoads();
+        terrain.GrowAndShowCities();
         //terrain.CreateRiver();
 
         m_objet = terrain.GenerateMesh();

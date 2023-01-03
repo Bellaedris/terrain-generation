@@ -71,9 +71,12 @@ adjacency_list_t Terrain::CreateRiverAdjacencyList()
 
 void Terrain::CreatePath(int begin, int end, int degree)
 {
+    if (map_adjacency.size() == 0)
+        map_adjacency = CreateAdjacencyList(degree);
+
     std::vector<weight_t> minDistance;
     std::vector<vertex_t> previous;
-    DijkstraComputePaths(begin, CreateAdjacencyList(degree), minDistance, previous);
+    DijkstraComputePaths(begin, map_adjacency, minDistance, previous);
 
     std::list<vertex_t> path = DijkstraGetShortestPathTo(end, previous);
 
@@ -160,23 +163,37 @@ void Terrain::CreateRiver()
 
 int Terrain::GetPathLength(int begin, int end, int degree)
 {
+    if (map_adjacency.size() == 0)
+        map_adjacency = CreateAdjacencyList(degree);
+
     std::vector<weight_t> minDistance;
     std::vector<vertex_t> previous;
-    DijkstraComputePaths(begin, CreateAdjacencyList(degree), minDistance, previous);
+    DijkstraComputePaths(begin, map_adjacency, minDistance, previous);
 
     return DijkstraGetShortestPathTo(end, previous).size();
 }
 
-void Terrain::CreateCitiesAndRoads(int numberOfCities)
+void Terrain::CreateCitiesAndRoads()
 {
-    std::vector<cityScore> cities = FindInterestPoints(numberOfCities);
-    int best;
+    int best, firstSeg, secondSeg;
 
     for (cityScore origin : cities)
     {
         for (cityScore dest : cities)
         {
-            
+            if (origin.i == dest.i && origin.j == dest.j)
+                continue;
+            best = GetPathLength(Index(origin.j, origin.i), Index(dest.j, dest.i), 1);
+            for (cityScore inBetween : cities)
+            {
+                firstSeg = GetPathLength(Index(origin.j, origin.i), Index(inBetween.j, inBetween.i), 1);
+                secondSeg = GetPathLength(Index(inBetween.j, inBetween.i), Index(dest.j, dest.i), 1);
+                if (firstSeg * firstSeg + secondSeg * secondSeg < best * best) {
+                    CreatePath(Index(origin.j, origin.i), Index(inBetween.j, inBetween.i), 1);
+                    CreatePath(Index(inBetween.j, inBetween.i), Index(dest.j, dest.i), 1);
+                }
+                break;
+            }
             CreatePath(Index(origin.j, origin.i), Index(dest.j, dest.i), 1);
         }
     }

@@ -162,7 +162,7 @@ void ScalarField::ExportImg(char *filename, float min, float max)
 #pragma endregion
 
 #pragma region construct / basics
-Terrain::Terrain(vec2 a, vec2 b, int nx, int ny, int seed) : ScalarField(a, b, nx, ny)
+Terrain::Terrain(vec2 a, vec2 b, int nx, int ny, int numberOfCities, int seed) : ScalarField(a, b, nx, ny)
 {
     hm = std::vector<double>(nx * ny);
     texture = Image(nx, ny);
@@ -181,6 +181,8 @@ Terrain::Terrain(vec2 a, vec2 b, int nx, int ny, int seed) : ScalarField(a, b, n
         {
             hm[Index(x, y)] = noisegen.GetNoise(x, y);
         }
+    
+    FindInterestPoints(numberOfCities);
 }
 
 Terrain::Terrain(vec2 a, vec2 b, int nx, int ny, double heightMax) : ScalarField(a, b, nx, ny)

@@ -112,8 +112,11 @@ protected:
     Image texture;
     const double minWater = 0.003;
 
+    adjacency_list_t map_adjacency;
+    std::vector<cityScore> cities;
+
 public:
-    Terrain(vec2 a, vec2 b, int nx, int ny, int seed = 1337) ;
+    Terrain(vec2 a, vec2 b, int nx, int ny,  int numberOfCities, int seed = 1337) ;
     Terrain(vec2 a, vec2 b, int nx, int ny, std::vector<double> hm) : ScalarField(a, b, nx, ny, hm) {}
     Terrain(vec2 a, vec2 b, int nx, int ny, double heightMax);
 
@@ -128,13 +131,14 @@ public:
 
     // Terrain edition
     void TectonicErosion();
-    void CreateCitiesAndRoads(int numberOfCities);
+    void CreateCitiesAndRoads();
+    void GrowAndShowCities();
     void CreatePath(int begin, int end, int degree);
     void CreateRiver();
 
     // analytics
     float MaxSlope(); // Lipschitzian constant
-    std::vector<cityScore> FindInterestPoints(int num);
+    void FindInterestPoints(int num);
     int GetPathLength(int begin, int end, int degree);
 
     bool Inside(Vector) const; // point in the terrain check
