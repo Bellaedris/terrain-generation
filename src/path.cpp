@@ -176,25 +176,40 @@ int Terrain::GetPathLength(int begin, int end, int degree)
 void Terrain::CreateCitiesAndRoads()
 {
     int best, firstSeg, secondSeg;
+    cityScore middlePath;
+    bool foundBetter;
 
     for (cityScore origin : cities)
     {
         for (cityScore dest : cities)
         {
+            foundBetter = false;
             if (origin.i == dest.i && origin.j == dest.j)
                 continue;
             best = GetPathLength(Index(origin.j, origin.i), Index(dest.j, dest.i), 1);
             for (cityScore inBetween : cities)
             {
+                if ((inBetween.i == origin.i && inBetween.j == origin.j) ||
+                    (inBetween.i == dest.i && inBetween.j == dest.j))
+                    continue;
                 firstSeg = GetPathLength(Index(origin.j, origin.i), Index(inBetween.j, inBetween.i), 1);
                 secondSeg = GetPathLength(Index(inBetween.j, inBetween.i), Index(dest.j, dest.i), 1);
-                if (firstSeg * firstSeg + secondSeg * secondSeg < best * best) {
-                    CreatePath(Index(origin.j, origin.i), Index(inBetween.j, inBetween.i), 1);
-                    CreatePath(Index(inBetween.j, inBetween.i), Index(dest.j, dest.i), 1);
+
+                if (std::pow(firstSeg, 2) + std::pow(secondSeg, 2) <= std::pow(best, 2))
+                {
+                    std::cout << "better!" << std::endl;
+                    foundBetter = true;
+                    middlePath = inBetween;
+                    break;
                 }
-                break;
             }
-            CreatePath(Index(origin.j, origin.i), Index(dest.j, dest.i), 1);
+            if (foundBetter)
+            {
+                CreatePath(Index(origin.j, origin.i), Index(middlePath.j, middlePath.i), 1);
+                CreatePath(Index(middlePath.j, middlePath.i), Index(dest.j, dest.i), 1);
+            }
+            else
+                CreatePath(Index(origin.j, origin.i), Index(dest.j, dest.i), 1);
         }
     }
 }

@@ -69,7 +69,7 @@ void Terrain::FindInterestPoints(int numberOfPoints = 1)
         }
 }
 
-void Terrain::GrowAndShowCities()
+void Terrain::GrowAndShowCities(int iter)
 {
     const int cityRadius = 1;
     const int spaceBetweenHouses = 2;
@@ -83,7 +83,7 @@ void Terrain::GrowAndShowCities()
         buildings.push_back(new buildingData(c.i, c.j));
 
         buildingData *currentBuilding;
-        for (int i = 0; i < 10; i++)
+        for (int i = 0; i < iter; i++)
         {
             // choose a building that can expand
             do

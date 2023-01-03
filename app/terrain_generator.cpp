@@ -78,7 +78,7 @@ public:
 
         terrain.GenerateTexture();
         terrain.CreateCitiesAndRoads();
-        terrain.GrowAndShowCities();
+        terrain.GrowAndShowCities(10);
         //terrain.CreateRiver();
 
         m_objet = terrain.GenerateMesh();

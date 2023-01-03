@@ -132,7 +132,7 @@ public:
     // Terrain edition
     void TectonicErosion();
     void CreateCitiesAndRoads();
-    void GrowAndShowCities();
+    void GrowAndShowCities(int iter);
     void CreatePath(int begin, int end, int degree);
     void CreateRiver();
 
