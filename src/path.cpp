@@ -173,7 +173,7 @@ int Terrain::GetPathLength(int begin, int end, int degree)
     return DijkstraGetShortestPathTo(end, previous).size();
 }
 
-void Terrain::CreateCitiesAndRoads()
+void Terrain::ConnectCities()
 {
     int best, firstSeg, secondSeg;
     cityScore middlePath;
@@ -197,7 +197,6 @@ void Terrain::CreateCitiesAndRoads()
 
                 if (std::pow(firstSeg, 2) + std::pow(secondSeg, 2) <= std::pow(best, 2))
                 {
-                    std::cout << "better!" << std::endl;
                     foundBetter = true;
                     middlePath = inBetween;
                     break;

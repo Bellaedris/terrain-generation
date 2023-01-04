@@ -1,5 +1,7 @@
 #include "terrain.h"
 
+#include <random>
+
 struct buildingData
 {
     /**
@@ -25,19 +27,7 @@ void Terrain::FindInterestPoints(int numberOfPoints = 1)
     ScalarField drain = GetDrainArea();
 
     int x, y, i;
-    double max = 0.;
-    double min = MAXFLOAT;
-    for (x = 0; x < nx; x++)
-    {
-        for (y = 0; y < ny; y++)
-        {
-            double h = drain.Height(x, y);
-            if (max < h)
-                max = h;
-            if (min > h)
-                min = h;
-        }
-    }
+    double max = GetMaxDrain(drain);
 
     cities = std::vector<cityScore>(numberOfPoints);
     weight_t bestW;
@@ -71,11 +61,18 @@ void Terrain::FindInterestPoints(int numberOfPoints = 1)
 
 void Terrain::GrowAndShowCities(int iter)
 {
-    const int cityRadius = 1;
-    const int spaceBetweenHouses = 2;
-    srand(time(NULL));
+    const int cityRadius = 0;
+    const int spaceBetweenHouses = 1;
+    const double step = 360.0 / 8.0;
 
-    int neigh, offsetX, offsetY;
+    ScalarField drain = GetDrainArea();
+    double maxDrain = GetMaxDrain(drain);
+
+    std::default_random_engine generator(time(NULL));
+    std::uniform_int_distribution<int> randDir(1, 8);
+    std::uniform_int_distribution<int> randBuilding;
+
+    int neigh, offsetX, offsetY, i, randomBuilding;
     double angle;
     for (cityScore c : cities)
     {
@@ -83,30 +80,36 @@ void Terrain::GrowAndShowCities(int iter)
         buildings.push_back(new buildingData(c.i, c.j));
 
         buildingData *currentBuilding;
-        for (int i = 0; i < iter; i++)
+        i = 0;
+        while (i < iter)
         {
+            randBuilding = std::uniform_int_distribution<int>(0, buildings.size() - 1);
             // choose a building that can expand
             do
             {
-                int random = rand() % buildings.size();
-                std::cout << buildings.size() << " selected " << random << std::endl;
-                currentBuilding = buildings[random];
+                randomBuilding = randBuilding(generator);
+                currentBuilding = buildings[randomBuilding];
             } while (currentBuilding->canGrow > 8);
 
             // grow the building block
             do
             {
-                neigh = rand() % 8 + 1;
+                neigh = randDir(generator);
             } while (currentBuilding->neigh[neigh] != nullptr);
 
-            angle = Deg2rad(360.0 / (double) neigh);
-            offsetX = std::cos(angle) * (cityRadius + spaceBetweenHouses);
-            offsetY = std::sin(angle) * (cityRadius + spaceBetweenHouses);
-            fprintf(stderr, "%d %d\n", offsetX, offsetY);
+            angle = Deg2rad(step * (double)neigh);
+            Vector dir(std::cos(angle), std::sin(angle), 0);
+            dir = normalize(dir);
+            offsetX = dir.x * (cityRadius + spaceBetweenHouses);
+            offsetY = dir.y * (cityRadius + spaceBetweenHouses);
+            if (drain.Height(c.i + offsetX, c.j + offsetY) >= minWater * maxDrain)
+                continue; //do not select spots that are in a river!!
             buildingData *newBuilding = new buildingData(c.i + offsetX, c.j + offsetY);
             newBuilding->updateNeighbor((neigh + 4) % 8, currentBuilding);
+            currentBuilding->updateNeighbor(neigh, newBuilding);
 
             buildings.push_back(newBuilding);
+            i++;
         }
 
         int x, y;

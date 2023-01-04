@@ -90,6 +90,7 @@ protected:
     adjacency_list_t CreateRiverAdjacencyList();
     double Cost(int si, int sj, int di, int dj, const ScalarField &wetness);
     double RiverCost(int si, int sj, int di, int dj, const ScalarField &wetness);
+    double GetMaxDrain(const ScalarField &drain);
 
     neighborhood Get8Neighbors(int i, int j) const;
     neighborhood Get4Neighbors(int i, int j) const;
@@ -131,7 +132,7 @@ public:
 
     // Terrain edition
     void TectonicErosion();
-    void CreateCitiesAndRoads();
+    void ConnectCities();
     void GrowAndShowCities(int iter);
     void CreatePath(int begin, int end, int degree);
     void CreateRiver();

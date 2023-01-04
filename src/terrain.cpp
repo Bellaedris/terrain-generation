@@ -483,6 +483,23 @@ ScalarField Terrain::GetDrainArea()
     return ScalarField(a, b, nx, ny, areas);
 }
 
+double Terrain::GetMaxDrain(const ScalarField &drain)
+{
+    int x, y, i;
+    double max = 0.;
+    for (x = 0; x < nx; x++)
+    {
+        for (y = 0; y < ny; y++)
+        {
+            double h = drain.Height(x, y);
+            if (max < h)
+                max = h;
+        }
+    }
+
+    return max;
+}
+
 ScalarField Terrain::GetWetness()
 {
     ScalarField s = GetSlope();
