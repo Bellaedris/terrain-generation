@@ -77,8 +77,8 @@ public:
         //terrain.ExportImg("../out/erodedmap.png", -1, 1);
 
         terrain.GenerateTexture();
-        //terrain.ConnectCities();
-        terrain.GrowAndShowCities(20);
+        terrain.ConnectCities();
+        terrain.GrowAndShowCities(10);
         //terrain.CreateRiver();
 
         m_objet = terrain.GenerateMesh();

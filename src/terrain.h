@@ -77,6 +77,7 @@ public:
     int Index(int, int) const;  // index dans le tableau
     std::pair<int, int> ReverseIndex(int) const; // index dans le tableau to 2 coord
     double Height(int, int) const; //hauteur en un point
+    std::pair<double, double> GetMinMax(const ScalarField &drain);
 
     bool Intersect(const Ray &r, float &t, float k/*constante de lipschitz*/) const;
 
@@ -90,7 +91,6 @@ protected:
     adjacency_list_t CreateRiverAdjacencyList();
     double Cost(int si, int sj, int di, int dj, const ScalarField &wetness);
     double RiverCost(int si, int sj, int di, int dj, const ScalarField &wetness);
-    double GetMaxDrain(const ScalarField &drain);
 
     neighborhood Get8Neighbors(int i, int j) const;
     neighborhood Get4Neighbors(int i, int j) const;

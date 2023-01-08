@@ -112,14 +112,14 @@ vec2 ScalarField::Gradient(int i, int j) const
         dhx = (Height(i + 1, j) - Height(i, j)) / stepX;
     else if (i == nx - 1)
         dhx = (Height(i, j) - Height(i - 1, j)) / stepX;
-    else 
+    else
         dhx = (Height(i + 1, j) - Height(i - 1, j)) / stepX;
 
     if (j == 0)
         dhy = (Height(i, j + 1) - Height(i, j)) / stepY;
     else if (j == ny - 1)
         dhy = (Height(i, j) - Height(i, j - 1)) / stepY;
-    else 
+    else
         dhy = (Height(i, j + 1) - Height(i, j - 1)) / stepY;
 
     return vec2(dhx, dhy);
@@ -159,6 +159,28 @@ void ScalarField::ExportImg(char *filename, float min, float max)
     write_image(out, filename);
 }
 
+std::pair<double, double> ScalarField::GetMinMax(const ScalarField &sf)
+{
+    int x, y, i;
+    double h;
+    double max = 0.;
+    double min = MAXFLOAT;
+    // find max and min val
+    for (int x = 0; x < nx; x++)
+    {
+        for (int y = 0; y < ny; y++)
+        {
+            h = sf.Height(x, y);
+            if (max < h)
+                max = h;
+            if (min > h)
+                min = h;
+        }
+    }
+
+    return {min, max};
+}
+
 #pragma endregion
 
 #pragma region construct / basics
@@ -181,7 +203,7 @@ Terrain::Terrain(vec2 a, vec2 b, int nx, int ny, int numberOfCities, int seed) :
         {
             hm[Index(x, y)] = noisegen.GetNoise(x, y);
         }
-    
+
     FindInterestPoints(numberOfCities);
 }
 
@@ -383,6 +405,9 @@ void Terrain::GenerateTexture()
         }
     }
 
+    ScalarField s = GetSlope();
+    auto minMax = GetMinMax(s);
+
     for (int x = 0; x < nx; x++)
     {
         for (int y = 0; y < ny; y++)
@@ -393,14 +418,26 @@ void Terrain::GenerateTexture()
                 texture(x, y) = Lerp(Color(0, .39, .61), Color(0.26, 0.69, 0.8), normalized);
                 continue;
             }
-            if (Height(x, y) < -0.5)
+            /*if (Height(x, y) < -0.5)
                 texture(x, y) = Color(0.73, 0.5, 0.37);
             else if (Height(x, y) < 0)
                 texture(x, y) = Color(0.13, 0.54, 0.13);
             else if (Height(x, y) < 0.5)
                 texture(x, y) = Color(0.5, 0.5, 0.5);
             else
+                texture(x, y) = White();*/
+            if (Height(x, y) < 0.2)
+                texture(x, y) = Lerp(Color(0.13, 0.54, 0.13), Color(0.73, 0.5, 0.37), Normalize01(minMax.first, minMax.second, s.Height(x, y)));
+            else if (Height(x, y) < 0.3)
+                if (s.Height(x, y) < 0.5)
+                    texture(x, y) = White();
+                else
+                    texture(x, y) = Color(0.5, 0.5, 0.5);
+            else if (s.Height(x, y) < 0.8)
                 texture(x, y) = White();
+            else
+                texture(x, y) = Color(0.5, 0.5, 0.5);
+            // texture(x, y) = Lerp(Color(0.5, 0.5, 0.5), White(), Normalize01(minMax.first, minMax.second, s.Height(x, y)));
         }
     }
 }
@@ -481,23 +518,6 @@ ScalarField Terrain::GetDrainArea()
     }
 
     return ScalarField(a, b, nx, ny, areas);
-}
-
-double Terrain::GetMaxDrain(const ScalarField &drain)
-{
-    int x, y, i;
-    double max = 0.;
-    for (x = 0; x < nx; x++)
-    {
-        for (y = 0; y < ny; y++)
-        {
-            double h = drain.Height(x, y);
-            if (max < h)
-                max = h;
-        }
-    }
-
-    return max;
 }
 
 ScalarField Terrain::GetWetness()

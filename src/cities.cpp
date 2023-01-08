@@ -27,7 +27,7 @@ void Terrain::FindInterestPoints(int numberOfPoints = 1)
     ScalarField drain = GetDrainArea();
 
     int x, y, i;
-    double max = GetMaxDrain(drain);
+    auto minMax = GetMinMax(drain);
 
     cities = std::vector<cityScore>(numberOfPoints);
     weight_t bestW;
@@ -38,12 +38,12 @@ void Terrain::FindInterestPoints(int numberOfPoints = 1)
         for (y = 0; y < ny; y++)
         {
             // in water, ignore
-            if (drain.Height(x, y) > minWater * max)
+            if (drain.Height(x, y) > minWater * minMax.second)
                 continue;
             h = Normalize01(-1, 1, Height(x, y));
             s = 1.0 / (1. + slope.Height(x, y));
-            d = drain.Height(x, y);
-            w = 1. * h + 10. * s + 0.05 * d;
+            d = Normalize01(minMax.first, minMax.second, drain.Height(x, y));
+            w = 1. * h + 10. * s + 2000 * d;
             if (w > bestW)
             {
                 cities[0].UpdateValues(x, y, w);
@@ -66,7 +66,7 @@ void Terrain::GrowAndShowCities(int iter)
     const double step = 360.0 / 8.0;
 
     ScalarField drain = GetDrainArea();
-    double maxDrain = GetMaxDrain(drain);
+    double maxDrain = GetMinMax(drain).second;
 
     std::default_random_engine generator(time(NULL));
     std::uniform_int_distribution<int> randDir(1, 8);
@@ -95,16 +95,16 @@ void Terrain::GrowAndShowCities(int iter)
             do
             {
                 neigh = randDir(generator);
-            } while (currentBuilding->neigh[neigh] != nullptr);
+                angle = Deg2rad(step * (double)neigh);
+                Vector dir(std::cos(angle), std::sin(angle), 0);
+                dir = normalize(dir);
+                offsetX = dir.x * (cityRadius + spaceBetweenHouses);
+                offsetY = dir.y * (cityRadius + spaceBetweenHouses);
+            } while (
+                currentBuilding->neigh[neigh] != nullptr ||
+                drain.Height(currentBuilding->i + offsetX, currentBuilding->j + offsetY) >= minWater * maxDrain);
 
-            angle = Deg2rad(step * (double)neigh);
-            Vector dir(std::cos(angle), std::sin(angle), 0);
-            dir = normalize(dir);
-            offsetX = dir.x * (cityRadius + spaceBetweenHouses);
-            offsetY = dir.y * (cityRadius + spaceBetweenHouses);
-            if (drain.Height(c.i + offsetX, c.j + offsetY) >= minWater * maxDrain)
-                continue; //do not select spots that are in a river!!
-            buildingData *newBuilding = new buildingData(c.i + offsetX, c.j + offsetY);
+            buildingData *newBuilding = new buildingData(currentBuilding->i + offsetX, currentBuilding->j + offsetY);
             newBuilding->updateNeighbor((neigh + 4) % 8, currentBuilding);
             currentBuilding->updateNeighbor(neigh, newBuilding);
 
