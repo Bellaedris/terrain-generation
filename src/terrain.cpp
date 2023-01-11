@@ -242,7 +242,13 @@ Vector Terrain::Normal(int i, int j) const
 
 double Terrain::Laplacian(int i, int j) const
 {
-    neighborhood n = Get4Neighbors(i, j);
+    double xn, xp, yn, yp;
+
+    xn = i == nx - 1 ? Height(i, j) : Height(i + 1, j);
+    xp = i == 0 ? Height(i, j) : Height(i - 1, j);
+    yn = j == ny - 1 ? Height(i, j) : Height(i, j + 1);
+    yp = j == 0 ? Height(i, j) : Height(i, j - 1);
+    /*neighborhood n = Get4Neighbors(i, j);
 
     double sum = 0;
 
@@ -251,21 +257,21 @@ double Terrain::Laplacian(int i, int j) const
         sum += n.neighbors[i].h;
     }
 
-    sum -= 4 * Height(i, j);
-
-    return sum / (stepX * stepY);
+    sum -= n.n * Height(i, j);*/
+    return (xn + xp + yn + yp - 4.0 * Height(i, j)) / (stepX * stepY);
 }
 
 neighborhood Terrain::Get4Neighbors(int i, int j) const
 {
     neighborhood n;
-    n.neighbors.resize(8);
+    n.neighbors.resize(4);
 
+    int neighI, neighJ, index;
     for (size_t k = 0; k < 4; k++)
     {
-        int neighI = i + neigh8x[neigh4Indices[k]];
-        int neighJ = j + neigh8y[neigh4Indices[k]];
-        int index = neighI * nx + neighJ;
+        neighI = i + neigh8x[neigh4Indices[k]];
+        neighJ = j + neigh8y[neigh4Indices[k]];
+        index = neighI * nx + neighJ;
 
         if (index > 0 && index < (nx * ny - 1))
         {
@@ -464,6 +470,7 @@ ScalarField Terrain::GetLaplacian()
     }
 
     ScalarField sm(a, b, nx, ny, laplacians);
+    
     return sm;
 }
 
@@ -535,7 +542,7 @@ ScalarField Terrain::GetWetness()
 
 void Terrain::TectonicErosion()
 {
-    double n = 2;
+    double n = 3;
     double hn = n / 2.0;
 
     for (int i = 0; i < 100; i++)
@@ -543,14 +550,14 @@ void Terrain::TectonicErosion()
         ScalarField totalSlope = GetSlope();
 
         ScalarField totalDrain = GetDrainArea().pow(hn);
-        totalDrain *= -0.00000001;
+        totalDrain *= -0.0001;
         totalDrain *= totalSlope.pow(n);
 
         ScalarField totalLaplacian = GetLaplacian();
-        totalLaplacian *= 0.000001;
+        totalLaplacian *= 0.0003;
         totalLaplacian += totalDrain;
 
-        *this += totalDrain;
+        *this += totalLaplacian;
         *this += 0.001;
     }
 }
