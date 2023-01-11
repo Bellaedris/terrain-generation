@@ -418,14 +418,6 @@ void Terrain::GenerateTexture()
                 texture(x, y) = Lerp(Color(0, .39, .61), Color(0.26, 0.69, 0.8), normalized);
                 continue;
             }
-            /*if (Height(x, y) < -0.5)
-                texture(x, y) = Color(0.73, 0.5, 0.37);
-            else if (Height(x, y) < 0)
-                texture(x, y) = Color(0.13, 0.54, 0.13);
-            else if (Height(x, y) < 0.5)
-                texture(x, y) = Color(0.5, 0.5, 0.5);
-            else
-                texture(x, y) = White();*/
             if (Height(x, y) < 0.2)
                 texture(x, y) = Lerp(Color(0.13, 0.54, 0.13), Color(0.73, 0.5, 0.37), Normalize01(minMax.first, minMax.second, s.Height(x, y)));
             else if (Height(x, y) < 0.3)
@@ -437,7 +429,6 @@ void Terrain::GenerateTexture()
                 texture(x, y) = White();
             else
                 texture(x, y) = Color(0.5, 0.5, 0.5);
-            // texture(x, y) = Lerp(Color(0.5, 0.5, 0.5), White(), Normalize01(minMax.first, minMax.second, s.Height(x, y)));
         }
     }
 }
@@ -544,7 +535,7 @@ ScalarField Terrain::GetWetness()
 
 void Terrain::TectonicErosion()
 {
-    double n = 1;
+    double n = 2;
     double hn = n / 2.0;
 
     for (int i = 0; i < 100; i++)
@@ -552,14 +543,14 @@ void Terrain::TectonicErosion()
         ScalarField totalSlope = GetSlope();
 
         ScalarField totalDrain = GetDrainArea().pow(hn);
-        totalDrain *= -0.001;
-        totalDrain *= totalSlope;
+        totalDrain *= -0.00000001;
+        totalDrain *= totalSlope.pow(n);
 
-        ScalarField totalLaplacian = GetLaplacian().pow(n);
-        totalLaplacian *= 0.001;
+        ScalarField totalLaplacian = GetLaplacian();
+        totalLaplacian *= 0.000001;
         totalLaplacian += totalDrain;
 
-        *this += totalLaplacian;
+        *this += totalDrain;
         *this += 0.001;
     }
 }
