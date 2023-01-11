@@ -73,8 +73,8 @@ public:
 
         terrain->GetWetness().ExportImg("../out/wetnessmap.png");
 
-        // terrain->TectonicErosion();
-        // terrain->ExportImg("../out/erodedmap.png", -1, 1);
+        //terrain->TectonicErosion();
+        //terrain->ExportImg("../out/erodedmap.png", -1, 1);
 
         terrain->GenerateTexture();
         // terrain->ConnectCities();
