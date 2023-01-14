@@ -5,7 +5,7 @@ double Terrain::Cost(int si, int sj, int di, int dj, const ScalarField &wetness)
     double d = distance(Position(si, sj), Position(di, dj));
     double slope = std::abs(Slope(si, sj) - Slope(di, dj));
 
-    return d * (1 + 10 * slope + 0.5 * wetness.Height(di, dj));
+    return d * (1 + 100 * slope + 0.5 * wetness.Height(di, dj));
 }
 
 double Terrain::RiverCost(int si, int sj, int di, int dj, const ScalarField &area)
@@ -175,6 +175,12 @@ int Terrain::GetPathLength(int begin, int end, int degree)
 
 void Terrain::ConnectCities()
 {
+    if (mapUpdated)
+    {
+        FindInterestPoints(cities.size());
+        mapUpdated = false;
+    }
+    
     int best, firstSeg, secondSeg;
     cityScore middlePath;
     bool foundBetter;
@@ -206,6 +212,7 @@ void Terrain::ConnectCities()
             {
                 CreatePath(Index(origin.j, origin.i), Index(middlePath.j, middlePath.i), 1);
                 CreatePath(Index(middlePath.j, middlePath.i), Index(dest.j, dest.i), 1);
+                break;
             }
             else
                 CreatePath(Index(origin.j, origin.i), Index(dest.j, dest.i), 1);
