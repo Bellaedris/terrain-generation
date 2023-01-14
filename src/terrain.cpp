@@ -14,9 +14,9 @@ ScalarField::ScalarField(vec2 a, vec2 b, int nx, int ny) : a(a), b(b), nx(nx), n
 
 ScalarField &ScalarField::operator+=(const ScalarField &rhs)
 {
-    for (int x = 0; x < nx; x++)
+    for (int x = 1; x < nx - 1; x++)
     {
-        for (int y = 0; y < ny; y++)
+        for (int y = 1; y < ny - 1; y++)
         {
             hm[x * nx + y] = Height(x, y) + rhs.Height(x, y);
         }
@@ -27,9 +27,9 @@ ScalarField &ScalarField::operator+=(const ScalarField &rhs)
 
 ScalarField &ScalarField::operator+=(const double &rhs)
 {
-    for (int x = 0; x < nx; x++)
+    for (int x = 1; x < nx - 1; x++)
     {
-        for (int y = 0; y < ny; y++)
+        for (int y = 1; y < ny - 1; y++)
         {
             hm[x * nx + y] = Height(x, y) + rhs;
         }
@@ -40,9 +40,9 @@ ScalarField &ScalarField::operator+=(const double &rhs)
 
 ScalarField &ScalarField::operator*=(const ScalarField &rhs)
 {
-    for (int x = 0; x < nx; x++)
+    for (int x = 1; x < nx - 1; x++)
     {
-        for (int y = 0; y < ny; y++)
+        for (int y = 1; y < ny - 1; y++)
         {
             hm[x * nx + y] = Height(x, y) * rhs.Height(x, y);
         }
@@ -53,9 +53,9 @@ ScalarField &ScalarField::operator*=(const ScalarField &rhs)
 
 ScalarField &ScalarField::operator*=(const double &rhs)
 {
-    for (int x = 0; x < nx; x++)
+    for (int x = 1; x < nx - 1; x++)
     {
-        for (int y = 0; y < ny; y++)
+        for (int y = 1; y < ny - 1; y++)
         {
             hm[x * nx + y] = Height(x, y) * rhs;
         }
@@ -397,22 +397,12 @@ Mesh Terrain::GenerateMesh()
 void Terrain::GenerateTexture()
 {
     ScalarField a = GetDrainArea();
-    double max = a.Height(0, 0);
-    double min = a.Height(0, 0);
-    for (int x = 0; x < nx; x++)
-    {
-        for (int y = 0; y < ny; y++)
-        {
-            double h = a.Height(x, y);
-            if (max < h)
-                max = h;
-            if (min > h)
-                min = h;
-        }
-    }
+    auto minMax = GetMinMax(a);
+    double max = minMax.second;
+    double min = minMax.first;
 
     ScalarField s = GetSlope();
-    auto minMax = GetMinMax(s);
+    minMax = GetMinMax(s);
 
     for (int x = 0; x < nx; x++)
     {
@@ -542,22 +532,25 @@ ScalarField Terrain::GetWetness()
 
 void Terrain::TectonicErosion()
 {
-    double n = 3;
+    double n = 1.5;
     double hn = n / 2.0;
+    double uplift = 0.001;
 
     for (int i = 0; i < 100; i++)
     {
         ScalarField totalSlope = GetSlope();
 
         ScalarField totalDrain = GetDrainArea().pow(hn);
-        totalDrain *= -0.0001;
+        totalDrain *= -0.00002;
         totalDrain *= totalSlope.pow(n);
 
         ScalarField totalLaplacian = GetLaplacian();
-        totalLaplacian *= 0.0003;
+        totalLaplacian *= 0.0001;
         totalLaplacian += totalDrain;
 
         *this += totalLaplacian;
-        *this += 0.001;
+        *this += uplift;
     }
+
+    mapUpdated = true;
 }
