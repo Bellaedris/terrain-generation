@@ -73,8 +73,8 @@ public:
 
         terrain->GetWetness().ExportImg("../out/wetnessmap.png");
 
-        //terrain->TectonicErosion();
-        //terrain->ExportImg("../out/erodedmap.png", -1, 1);
+        // terrain->TectonicErosion();
+        // terrain->ExportImg("../out/erodedmap.png", -1, 1);
 
         terrain->GenerateTexture();
         // terrain->ConnectCities();
@@ -119,7 +119,7 @@ public:
         {
             std::cout << "growing" << std::endl;
             clear_key_state('t');
-            terrain->GrowAndShowCities(10);
+            terrain->GrowAndShowCities(5);
             Image i_texture = terrain->GetTexture();
             write_image(i_texture, "../out/texture.png");
             texture = make_texture(0, i_texture);
@@ -130,6 +130,26 @@ public:
             clear_key_state('r');
 
             terrain->ConnectCities();
+            Image i_texture = terrain->GetTexture();
+            write_image(i_texture, "../out/texture.png");
+            texture = make_texture(0, i_texture);
+        }
+
+        if (key_state('e'))
+        {
+            clear_key_state('e');
+
+            terrain->TectonicErosion();
+            terrain->ExportImg("../out/erodedmap.png", -1, 1);
+            ScalarField slope = terrain->GetSlope();
+            slope.ExportImg("../out/erodedslopemap.png");
+
+            terrain->GetLaplacian().ExportImg("../out/erodedlaplacianmap.png");
+
+            terrain->GetDrainArea().sqrt().sqrt().ExportImg("../out/erodeddrainmap.png");
+
+            terrain->GetWetness().ExportImg("../out/erodedwetnessmap.png");
+            m_objet = terrain->GenerateMesh();
             Image i_texture = terrain->GetTexture();
             write_image(i_texture, "../out/texture.png");
             texture = make_texture(0, i_texture);

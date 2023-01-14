@@ -112,6 +112,7 @@ protected:
 
     Image texture;
     const double minWater = 0.003;
+    bool mapUpdated = false;
 
     adjacency_list_t map_adjacency;
     std::vector<cityScore> cities;
