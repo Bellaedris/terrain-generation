@@ -34,6 +34,7 @@ void Terrain::FindInterestPoints(int numberOfPoints = 1)
 
     double w;
     double h, s, d;
+    std::vector<double> interestPoints(hm.size());
     for (x = 0; x < nx; x++)
         for (y = 0; y < ny; y++)
         {
@@ -44,6 +45,7 @@ void Terrain::FindInterestPoints(int numberOfPoints = 1)
             s = 1.0 / (1. + slope.Height(x, y));
             d = Normalize01(minMax.first, minMax.second, drain.Height(x, y));
             w = 1. * h + 10. * s + 2000 * d;
+            interestPoints[Index(x, y)] = w;
             if (w > bestW)
             {
                 cities[0].UpdateValues(x, y, w);
@@ -57,10 +59,19 @@ void Terrain::FindInterestPoints(int numberOfPoints = 1)
                         break;
                     }
         }
+
+    ScalarField ip(a, b, nx, ny, interestPoints);
+    ip.ExportImg("../out/interestmap.png");
 }
 
 void Terrain::GrowAndShowCities(int iter)
 {
+    if (mapUpdated)
+    {
+        FindInterestPoints(cities.size());
+        mapUpdated = false;
+    }
+
     const int cityRadius = 0;
     const int spaceBetweenHouses = 1;
     const double step = 360.0 / 8.0;
